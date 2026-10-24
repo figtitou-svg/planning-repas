@@ -2,7 +2,7 @@
 
 *[English version](README.md)*
 
-![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+[![CI](https://github.com/figtitou-svg/planning-repas/actions/workflows/ci.yml/badge.svg)](https://github.com/figtitou-svg/planning-repas/actions/workflows/ci.yml) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
 
 Un planificateur de repas pour deux (ou deux foyers) : recettes, catalogue d'ingrédients, stock avec dates de péremption, planning de la semaine et **liste de courses générée automatiquement** — groupée par rayon, ajustée au nombre de portions, avec un coût estimé.
 
@@ -77,3 +77,7 @@ scripts/         scripts de configuration, de vérification et d'initialisation 
 deploy/          unité systemd et script de déploiement
 public/          icône et service worker
 ```
+
+## Licence
+
+[MIT](LICENSE)

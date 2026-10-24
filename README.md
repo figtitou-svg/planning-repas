@@ -2,7 +2,7 @@
 
 *[Version française](README.fr.md)*
 
-![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+[![CI](https://github.com/figtitou-svg/planning-repas/actions/workflows/ci.yml/badge.svg)](https://github.com/figtitou-svg/planning-repas/actions/workflows/ci.yml) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
 
 A meal planner for two (or two households): recipes, an ingredient catalogue, a pantry with expiry dates, a weekly plan, and a **shopping list generated automatically** — grouped by supermarket aisle, scaled to the number of portions, with an estimated cost.
 
@@ -77,3 +77,7 @@ scripts/         Notion setup, verification and seeding scripts
 deploy/          systemd unit and deploy script
 public/          icon and service worker
 ```
+
+## License
+
+[MIT](LICENSE)
