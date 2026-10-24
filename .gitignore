@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+
+# Config et worktrees Claude Code (locaux)
+.claude/
+
+# Connection settings for deploy/deploy.sh
+deploy/deploy.env

@@ -1,0 +1,1679 @@
+/* Planning Repas : papier, encre et un vert sapin.
+   Une seule chose est mise en scène : la liste de courses, dessinée comme un ticket de caisse
+   (voir « Ticket » plus bas). Le reste reste sobre pour la laisser ressortir. */
+
+:root {
+  color-scheme: light;
+
+  --paper: #f2f3ee;
+  --surface: #ffffff;
+  --ticket: #fffefa;
+  --ink: #1b211e;
+  --ink-2: #3a423d;
+  --ink-3: #5e665f;
+  --line: #e3e5de;
+  --line-strong: #c9cdc3;
+  --field-border: #8c928a;
+
+  --primary: #2f6f4f;
+  --primary-dark: #21523a;
+  --primary-soft: #e3efe8;
+  --warn: #8a5300;
+  --warn-bg: #fff1d6;
+  --danger: #b3261e;
+  --danger-bg: #fdecea;
+  --focus: #1f6b47;
+
+  /* Une couleur par rayon (voir lib/categoryColor.ts) */
+  --cat-1: #4c9a5b;
+  --cat-2: #d0574b;
+  --cat-3: #5b8fcf;
+  --cat-4: #5fb0c4;
+  --cat-5: #d39a2f;
+  --cat-6: #8b6bc1;
+  --cat-7: #c4649a;
+  --cat-8: #8c918a;
+
+  --radius: 16px;
+  --radius-sm: 12px;
+  --tabbar-h: 60px;
+
+  font-family: "Bricolage Grotesque Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+a {
+  color: var(--primary);
+}
+
+p {
+  margin-block: 0;
+}
+
+.icon {
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+}
+
+:where(a, button, summary, input, select, textarea):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+.page-sub {
+  margin: -8px 0 20px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* Barre du haut : le nom de l'app et la cloche */
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.top-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 640px;
+  height: 52px;
+  margin: 0 auto;
+  padding: 0 8px 0 16px;
+}
+
+.top-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.top-bar-title::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.household-switcher {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 9.5rem;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.household-switcher {
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Écran « Qui est-ce ? » : plein écran, au-dessus de la barre du haut et des onglets. */
+.household-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  background: var(--paper);
+}
+
+.household-picker h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.household-picker-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.household-picker-choice {
+  min-height: 72px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.household-picker-choice:hover,
+.household-picker-choice[aria-current="true"] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.household-picker-close {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  cursor: pointer;
+}
+
+
+.bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  color: var(--ink);
+}
+
+.bell:hover,
+.bell[aria-current="page"] {
+  background: var(--primary-soft);
+}
+
+.bell .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 3px;
+  right: 1px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--paper);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Barre d'onglets du bas : à portée du pouce */
+
+.tab-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.tab-bar-inner {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.tab-bar a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--tabbar-h);
+  padding: 8px 2px;
+  color: var(--ink-3);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tab-bar .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.tab-bar a[aria-current="page"] {
+  color: var(--primary);
+}
+
+.tab-bar a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 24%;
+  left: 24%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--primary);
+}
+
+/* Boutons : le style de base a une spécificité nulle (:where), les classes le surchargent. */
+
+:where(button, .btn-link) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+:where(button, .btn-link):hover:not(:disabled) {
+  background: var(--paper);
+}
+
+:where(button):disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+:where(button[type="submit"]),
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+:where(button[type="submit"]):hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-danger,
+.btn-danger-ghost {
+  color: var(--danger);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn-danger:hover:not(:disabled),
+.btn-danger-ghost:hover:not(:disabled) {
+  background: var(--danger-bg);
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.icon-btn {
+  min-width: 44px;
+  padding: 0;
+}
+
+.btn-link {
+  color: var(--primary);
+}
+
+.chip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin-bottom: 16px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chip-link:hover {
+  background: var(--surface);
+}
+
+/* Blocs de l'accueil et des alertes */
+
+.block {
+  margin-bottom: 28px;
+}
+
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.block-head a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.block-note {
+  margin: 0 0 10px;
+  color: var(--ink-3);
+}
+
+.block-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.list-summary {
+  margin: 0 0 10px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+/* Listes : un seul panneau par liste, des lignes séparées par un filet (plus de carte par élément) */
+
+.panel {
+  margin: 0 0 24px;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.panel > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.panel-pad {
+  padding: 14px 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.card-meta {
+  margin: 2px 0 0;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+.row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.row-head-text {
+  min-width: 0;
+}
+
+/* Cœur des favorites : grande zone tactile, sans cadre */
+.heart-btn {
+  margin: -6px -8px 0 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.heart-btn:hover:not(:disabled) {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.heart-btn.is-favorite {
+  color: var(--danger);
+}
+
+.recipe-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.segmented button {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--primary);
+  color: #fff;
+}
+
+.segmented .icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.segmented-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.recipe-cost {
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-cost {
+  text-align: center;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.row-actions .icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* La suppression reste à l'écart des actions courantes */
+.row-actions .btn-danger,
+.row-actions .btn-danger-ghost {
+  margin-left: auto;
+}
+
+.row-details {
+  margin-top: 6px;
+}
+
+.row-details summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.row-details summary::-webkit-details-marker,
+.fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.row-details summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.row-details[open] summary::after {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.card-ingredients {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.card-ingredients li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--line-strong);
+}
+
+.card-ingredients li:last-child {
+  border-bottom: none;
+}
+
+.cat-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cat);
+}
+
+.row > .cat-dot {
+  align-self: flex-start;
+  margin-top: 0.55rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.row > .chip {
+  margin-top: 0;
+}
+
+.chip-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.chip-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Formulaires */
+
+:where(.recipe-form, .ingredient-form, .pantry-form, .import-panel) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+main > .ingredient-form {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.sheet-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.sheet-panel .import-panel {
+  padding-bottom: 16px;
+  border-bottom: 2px dashed var(--line-strong);
+}
+
+.fold {
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.fold summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 16px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.fold summary .icon {
+  color: var(--primary);
+}
+
+.fold[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.fold form {
+  padding: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+:where(textarea) {
+  resize: vertical;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--primary);
+  outline-offset: 1px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 480px) {
+  .form-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+.form-error {
+  margin: 0 0 16px;
+  padding: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.form-fieldset .form-error,
+.sheet-panel .form-error {
+  margin: 0;
+}
+
+.row-warning {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+/* Recherche dans le catalogue */
+
+.ingredient-search {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+}
+
+/* Liste déroulante de recherche d'ingrédient (Stock) */
+
+.combobox {
+  position: relative;
+}
+
+.combobox-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 25;
+  max-height: 260px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(27, 33, 30, 0.14);
+}
+
+.combobox-results li + li {
+  margin-top: 2px;
+}
+
+.combobox-results button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  font-weight: 500;
+  text-align: left;
+}
+
+.combobox-results button:hover {
+  background: var(--paper);
+}
+
+.combobox-empty {
+  padding: 8px 12px;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+}
+
+/* Choix des ingrédients d'une recette */
+
+.check-list {
+  max-height: 260px;
+  margin: 8px 0 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.check-list li + li {
+  margin-top: 2px;
+}
+
+.check-list label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.check-list label:hover {
+  background: var(--surface);
+}
+
+.check-list input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.check-list-name {
+  flex: 1;
+}
+
+.package-hint {
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+button.add-new-ingredient {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.new-ingredient-hint {
+  margin: 8px 0 0;
+}
+
+.selected-ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-ingredient-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--line-strong);
+}
+
+.selected-ingredient-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.selected-ingredient-main {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.selected-ingredient-name {
+  font-weight: 600;
+}
+
+.selected-ingredient-row input[type="number"] {
+  width: 6.5rem;
+}
+
+.selected-ingredient-unit-select {
+  width: auto;
+  min-width: 5rem;
+}
+
+.selected-ingredient-unit {
+  min-width: 2rem;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+}
+
+.new-ingredient-name {
+  flex: 1 1 100%;
+}
+
+.new-ingredient-row .row-warning {
+  flex: 1 1 100%;
+}
+
+/* États vides et erreurs */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+  padding: 28px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.error-state {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Sélecteur de semaine */
+
+.week-stepper {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.week-stepper .icon-btn {
+  border-color: transparent;
+  background: transparent;
+}
+
+.week-stepper-label {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.week-stepper-when {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.week-stepper-range {
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+/* Panier : avancement des courses */
+
+.basket-summary {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.basket-summary-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1.125rem;
+}
+
+.basket-summary-main .price {
+  color: var(--primary);
+}
+
+.progress {
+  height: 8px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+  transition: width 240ms ease-out;
+}
+
+.sync-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: var(--warn-bg);
+  border-radius: var(--radius-sm);
+  color: var(--warn);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Ticket : la liste de courses, comme un ticket de caisse.
+   Le filtre (ombre) est sur l'enveloppe car un masque découperait l'ombre. */
+
+.ticket-wrap {
+  margin-bottom: 24px;
+  filter: drop-shadow(0 1px 1px rgba(27, 33, 30, 0.1)) drop-shadow(0 12px 20px rgba(27, 33, 30, 0.08));
+}
+
+.ticket {
+  --tooth: 9px;
+  padding: 22px 20px 34px;
+  background: var(--ticket);
+  border-radius: 6px 6px 0 0;
+  /* Bord inférieur en dents de scie, comme arraché */
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+}
+
+.ticket-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 2px dashed var(--line-strong);
+}
+
+.ticket-title {
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.ticket-week {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.ticket-edit-btn {
+  align-self: center;
+  min-height: 36px;
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--primary);
+}
+
+/* Mode « Modifier » : nom, quantité tapée et poubelle sur une même ligne. */
+.ticket-line-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.ticket-line-edit .ticket-line-name {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.ticket-qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ticket-qty-input {
+  width: 7rem;
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.ticket-qty-input[aria-invalid="true"] {
+  border-color: var(--danger, #c0392b);
+}
+
+.ticket-qty-unit {
+  min-width: 2.5rem;
+  color: var(--ink-3);
+}
+
+.ticket-edit-error {
+  flex-basis: 100%;
+  color: var(--danger, #c0392b);
+  font-size: 0.875rem;
+}
+
+.ticket-group {
+  margin-top: 20px;
+}
+
+.ticket-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 -20px 4px;
+  padding: 8px 20px 8px 15px;
+  background: color-mix(in srgb, var(--cat) 13%, var(--ticket));
+  border-left: 5px solid var(--cat);
+}
+
+.ticket-group-head h2 {
+  font-size: 1rem;
+}
+
+.ticket-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ticket-line {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+}
+
+.ticket-line-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.ticket-line input[type="checkbox"] {
+  display: grid;
+  flex: none;
+  place-content: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  background: var(--ticket) center / 16px no-repeat;
+  border: 2px solid var(--field-border);
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ticket-line input[type="checkbox"]:checked {
+  background-color: var(--primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  border-color: var(--primary);
+}
+
+.ticket-line-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ticket-line-top {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ticket-line-name {
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* Pointillés entre le nom et le prix */
+.ticket-dots {
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 2px dotted var(--line-strong);
+  transform: translateY(-3px);
+}
+
+.ticket-line-meta {
+  display: block;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.ticket-line.is-checked .ticket-line-name {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+.ticket-line.is-checked .price,
+.ticket-line.is-checked .ticket-line-meta {
+  color: var(--ink-3);
+  opacity: 0.8;
+}
+
+.ticket-line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 4px 38px;
+}
+
+.ticket-action-btn {
+  min-height: 40px;
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--primary);
+}
+
+/* Ligne « à écrire » : on ajoute un article comme on l'ajouterait au stylo sur le ticket.
+   Les suggestions restent dans le flux : le masque du ticket couperait une liste flottante. */
+
+.ticket-add {
+  padding-top: 12px;
+}
+
+.ticket-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ticket-add-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border-bottom: 2px dotted var(--field-border);
+}
+
+/* Le focus entoure tout le champ (icône comprise), pas seulement le texte */
+.ticket-add-field:focus-within {
+  border-bottom-style: solid;
+  border-bottom-color: var(--primary);
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ticket-add-input:focus-visible {
+  outline: none;
+}
+
+.ticket-add-icon {
+  color: var(--primary);
+}
+
+.ticket-add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-weight: 500;
+}
+
+.ticket-add-input::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.ticket-add-results {
+  position: static;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ticket-add-results li {
+  border-bottom: 2px dotted var(--line-strong);
+}
+
+.ticket-add-results li + li {
+  margin-top: 0;
+}
+
+.ticket-add-results button {
+  padding-left: 0;
+  color: var(--primary);
+}
+
+.ticket-add-hint,
+.ticket-add-notice {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.ticket-add-notice {
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.ticket-add-notice.is-error {
+  color: var(--danger);
+}
+
+.ticket-add-notice:empty {
+  display: none;
+}
+
+.ticket-empty {
+  margin: 20px 0 0;
+  color: var(--ink-3);
+}
+
+.ticket-note {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ticket-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 2px dashed var(--line-strong);
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.ticket-total .price {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* Glisser pour agir : la ligne suit le doigt et révèle l'action dessous */
+
+.swipe-reveal {
+  position: relative;
+}
+
+.swipe-reveal-active {
+  overflow: hidden;
+}
+
+.swipe-fg {
+  position: relative;
+  touch-action: pan-y;
+  transition: transform 200ms ease-out;
+}
+
+.swipe-reveal-active .swipe-fg {
+  will-change: transform;
+}
+
+.swipe-bg {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  padding: 0 24px;
+  pointer-events: none;
+}
+
+.swipe-reveal-active .swipe-bg {
+  display: flex;
+}
+
+.swipe-bg-right {
+  justify-content: flex-start;
+}
+
+.swipe-bg-left {
+  justify-content: flex-end;
+}
+
+.swipe-bg-schedule {
+  background: var(--primary);
+  color: #fff;
+}
+
+.swipe-bg-remove {
+  background: var(--danger);
+  color: #fff;
+}
+
+.swipe-bg-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  transition: transform 120ms ease-out;
+}
+
+.swipe-bg-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.swipe-bg-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.swipe-bg-armed .swipe-bg-label {
+  text-decoration: underline;
+}
+
+/* Messages passagers, au-dessus de la barre d'onglets */
+
+.toast-region {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
+  left: 16px;
+  z-index: 35;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(27, 33, 30, 0.25);
+  color: #fff;
+  font-weight: 600;
+  pointer-events: auto;
+}
+
+.notice-error {
+  background: var(--danger);
+}
+
+.notice-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 6px;
+}
+
+.notice-action .btn-sm {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+.notice-action .btn-sm:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Fenêtre de programmation : une feuille qui monte du bas de l'écran */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(27, 33, 30, 0.5);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 640px;
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  animation: sheet-up 220ms ease-out;
+}
+
+.modal:focus {
+  outline: none;
+}
+
+.modal .form-actions > * {
+  flex: 1;
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.stepper button {
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.stepper-value {
+  min-width: 3.5rem;
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-fg,
+  .swipe-bg-content,
+  .progress span {
+    transition: none !important;
+  }
+
+  .modal {
+    animation: none;
+  }
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Planning Repas — appli de planification de repas
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/planning-repas
+EnvironmentFile=/home/ubuntu/planning-repas/.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=15
+# Journaux : sudo journalctl -u planning-repas -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
