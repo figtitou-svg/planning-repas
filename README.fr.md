@@ -8,6 +8,12 @@ Un planificateur de repas pour deux (ou deux foyers) : recettes, catalogue d'ing
 
 C'est une petite appli web pensée pour le mobile (installable en PWA) dont la base de données est **Notion** : les données restent modifiables à la main et rien d'autre n'est à héberger. L'interface est en français.
 
+## Captures d'écran
+
+![Écrans d'accueil, de recettes et de stock](docs/screenshots/overview.png)
+
+*Accueil, recettes et stock, sur un vrai espace Notion.*
+
 ## Architecture en un coup d'œil
 
 ```mermaid

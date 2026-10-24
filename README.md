@@ -8,6 +8,12 @@ A meal planner for two (or two households): recipes, an ingredient catalogue, a 
 
 It is a small mobile-first web app (installable as a PWA) whose database is **Notion**, so the data stays editable by hand and nothing else needs to be hosted. The interface is in French.
 
+## Screenshots
+
+![Home, recipes and pantry screens](docs/screenshots/overview.png)
+
+*Home, recipes and pantry (French interface), running on a real Notion workspace.*
+
 ## Architecture at a glance
 
 ```mermaid
