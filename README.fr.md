@@ -2,9 +2,31 @@
 
 *[English version](README.md)*
 
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+
 Un planificateur de repas pour deux (ou deux foyers) : recettes, catalogue d'ingrédients, stock avec dates de péremption, planning de la semaine et **liste de courses générée automatiquement** — groupée par rayon, ajustée au nombre de portions, avec un coût estimé.
 
 C'est une petite appli web pensée pour le mobile (installable en PWA) dont la base de données est **Notion** : les données restent modifiables à la main et rien d'autre n'est à héberger. L'interface est en français.
+
+## Architecture en un coup d'œil
+
+```mermaid
+flowchart LR
+  UI[Next.js PWA<br/>recipes, plan, pantry, shopping list] --> API[API routes]
+  API --> N[(Notion<br/>6 databases)]
+  TT[TikTok link or pasted text] --> GM[Gemini<br/>recipe import]
+  GM --> API
+  N --> SL[Shopping list engine<br/>portions, pantry, packages, aisles]
+  SL --> UI
+```
+
+## Points forts techniques
+
+- **Notion comme vraie base de données.** Des dépôts typés sur six bases, et `npm run verify:notion` qui compare le schéma réel à ce que le code attend.
+- **Une liste de courses qui raisonne en paquets.** Les quantités suivent les portions, le stock est déduit, et le résultat est groupé par rayon avec un coût estimé.
+- **Pensée pour le supermarché.** Les coches sont mises en file en local puis envoyées plus tard : une connexion capricieuse n'en perd aucune.
+- **Import par LLM sécurisé.** L'import depuis un lien TikTok ou du texte protège l'appel Gemini contre l'injection de prompt et rapproche les ingrédients du catalogue.
+- **Deux foyers** qui partagent recettes et ingrédients, chacun avec son stock, son planning et ses courses. 490+ tests Vitest, TypeScript strict.
 
 ## Fonctionnalités
 

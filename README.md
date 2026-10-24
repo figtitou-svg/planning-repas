@@ -2,9 +2,31 @@
 
 *[Version française](README.fr.md)*
 
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white) ![database](https://img.shields.io/badge/database-Notion-000000?logo=notion&logoColor=white) ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+
 A meal planner for two (or two households): recipes, an ingredient catalogue, a pantry with expiry dates, a weekly plan, and a **shopping list generated automatically** — grouped by supermarket aisle, scaled to the number of portions, with an estimated cost.
 
 It is a small mobile-first web app (installable as a PWA) whose database is **Notion**, so the data stays editable by hand and nothing else needs to be hosted. The interface is in French.
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  UI[Next.js PWA<br/>recipes, plan, pantry, shopping list] --> API[API routes]
+  API --> N[(Notion<br/>6 databases)]
+  TT[TikTok link or pasted text] --> GM[Gemini<br/>recipe import]
+  GM --> API
+  N --> SL[Shopping list engine<br/>portions, pantry, packages, aisles]
+  SL --> UI
+```
+
+## Engineering highlights
+
+- **Notion as a real database.** Typed repositories over six databases, plus `npm run verify:notion` that checks the live schema against what the code expects.
+- **A shopping list that thinks in packages.** Quantities are scaled to the portions, the pantry is subtracted, and the result is grouped by aisle with an estimated cost.
+- **Built for the supermarket.** Ticks are queued locally and flushed later, so a flaky connection never loses them.
+- **Safe LLM import.** Recipe import from a TikTok link or pasted text guards the Gemini call against prompt injection and matches ingredients to the catalogue.
+- **Two households** sharing recipes and ingredients, each with its own pantry, plan and shopping list. 490+ Vitest tests, strict TypeScript.
 
 ## Features
 
