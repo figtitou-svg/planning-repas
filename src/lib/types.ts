@@ -21,6 +21,8 @@ export interface Recipe {
   portions: number;
   /** Recette gardée à portée de main (case « Favori » dans Notion). */
   favorite: boolean;
+  /** Catégorie (Apéro, Viande…), "" si non renseignée. */
+  category?: string;
   ingredients: RecipeIngredient[];
   /** Étapes de préparation (corps de la page Notion). Seulement renvoyées par la lecture d'une recette seule. */
   steps?: string[];

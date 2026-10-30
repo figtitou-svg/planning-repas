@@ -661,6 +661,84 @@ p {
   border-bottom: none;
 }
 
+/* Recettes : une ligne cliquable par recette, barre de la couleur de sa catégorie */
+
+.recipe-list {
+  --cat: var(--cat-8);
+}
+
+.recipe-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 14px 13px;
+  border-left: 4px solid var(--cat);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.recipe-link:hover {
+  background: color-mix(in srgb, var(--cat) 8%, var(--surface));
+}
+
+.recipe-link::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  border-top: 1.75px solid var(--ink-3);
+  border-right: 1.75px solid var(--ink-3);
+  transform: rotate(45deg);
+}
+
+.recipe-category {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.recipe-fav {
+  flex: none;
+  display: inline-flex;
+  color: var(--danger);
+}
+
+.recipe-detail {
+  --cat: var(--cat-8);
+}
+
+.recipe-detail-head {
+  align-items: flex-start;
+  border-left: 4px solid var(--cat);
+  padding-left: 12px;
+}
+
+.recipe-chip {
+  background: color-mix(in srgb, var(--cat) 18%, var(--surface));
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--cat) 45%, transparent);
+}
+
+.recipe-detail-actions {
+  margin: 12px 0 20px;
+}
+
+.section-title {
+  margin: 20px 0 8px;
+  font-size: 1.0625rem;
+}
+
+.recipe-detail .card-ingredients {
+  margin: 0 0 8px;
+  padding: 4px 16px;
+}
+
+.recipe-detail .card-steps {
+  margin: 0 0 8px;
+  padding: 10px 16px 10px 2.4em;
+}
+
 .card-steps {
   margin: 4px 0 0;
   padding-left: 1.4em;

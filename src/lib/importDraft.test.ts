@@ -32,7 +32,16 @@ describe("buildDraft", () => {
       newIngredients: [{ name: "basilic", unit: "g", quantity: 5 }],
       unitMismatchIds: ["i2"],
       steps: [],
+      category: "",
     });
+  });
+
+  it("carries the category of the import", () => {
+    const draft = buildDraft(
+      { name: "R", portions: 2, matched: [], created: [], category: "Dessert" },
+      CATALOG
+    );
+    expect(draft.category).toBe("Dessert");
   });
 
   it("carries the steps and ignores anything that is not text", () => {

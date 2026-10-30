@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getNotionClient } from "@/lib/notionClient";
 import { getRecipe, updateRecipe, deleteRecipe } from "@/lib/repositories/recipes";
 import { invalidSteps } from "@/lib/stepsValidation";
+import { invalidCategory } from "@/lib/recipeCategories";
 import { invalidateRecipes } from "@/lib/cachedReads";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +23,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   if (invalidSteps(data?.steps)) {
     return NextResponse.json({ error: "steps doit être une liste de textes" }, { status: 400 });
+  }
+  if (invalidCategory(data?.category)) {
+    return NextResponse.json({ error: "category inconnue" }, { status: 400 });
   }
   try {
     await updateRecipe(getNotionClient(), (await params).id, data);

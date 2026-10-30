@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       matched,
       created,
       steps: parsed.steps,
+      category: parsed.category,
     });
   } catch (e) {
     if (e instanceof SocialImportError) {

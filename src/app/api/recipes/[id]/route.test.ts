@@ -62,6 +62,17 @@ describe("PATCH /api/recipes/[id]", () => {
     expect(updateRecipe).not.toHaveBeenCalled();
   });
 
+  it("passes a category, an empty one to clear it, and rejects an unknown one", async () => {
+    expect((await patch({ category: "Viande" })).status).toBe(204);
+    expect(updateRecipe).toHaveBeenLastCalledWith({}, "r1", { category: "Viande" });
+    expect((await patch({ category: "" })).status).toBe(204);
+    expect(updateRecipe).toHaveBeenLastCalledWith({}, "r1", { category: "" });
+
+    updateRecipe.mockClear();
+    expect((await patch({ category: "Pizza" })).status).toBe(400);
+    expect(updateRecipe).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid JSON body", async () => {
     const response = await patch("{nope", true);
 

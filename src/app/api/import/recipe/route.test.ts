@@ -53,6 +53,7 @@ describe("POST /api/import/recipe", () => {
         { name: "basilic", quantity: 5, unit: "g" },
       ],
       steps: ["Cuire les pâtes", "Ajouter la sauce"],
+      category: "Féculents",
     });
     consoleError.mockReset();
     vi.spyOn(console, "error").mockImplementation(consoleError);
@@ -75,6 +76,7 @@ describe("POST /api/import/recipe", () => {
       ],
       created: [{ name: "basilic", unit: "g", quantity: 5 }],
       steps: ["Cuire les pâtes", "Ajouter la sauce"],
+      category: "Féculents",
     });
     expect(fetchSocialCaption).toHaveBeenCalledWith("https://www.tiktok.com/@a/video/1");
     expect(parseRecipeText).toHaveBeenCalledWith("légende TikTok", ["Pâtes", "Tomate"]);

@@ -62,6 +62,7 @@ describe("parseRecipeText", () => {
         { name: "tomate", quantity: 3, unit: "pièce" },
       ],
       steps: [],
+      category: "",
     });
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -478,6 +479,44 @@ describe("parseRecipeText", () => {
       parseRecipeText("x", [], fetchImpl as unknown as typeof fetch)
     ).rejects.toThrow("GEMINI_API_KEY");
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe("parseRecipeText category", () => {
+  beforeEach(() => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function geminiReturning(category: unknown): typeof fetch {
+    const recipe = {
+      name: "A",
+      portions: 2,
+      ingredients: [{ name: "sel", quantity: 1, unit: "g" }],
+      category,
+    };
+    return vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(recipe) }] } }] }),
+    }) as unknown as typeof fetch;
+  }
+
+  it("keeps a known category", async () => {
+    expect((await parseRecipeText("texte", [], geminiReturning("Dessert"))).category).toBe("Dessert");
+  });
+
+  it.each([["Pizza"], [3], [undefined]])("drops the unknown category %j", async (category) => {
+    expect((await parseRecipeText("texte", [], geminiReturning(category))).category).toBe("");
+  });
+
+  it("asks Gemini for the category from the fixed list", async () => {
+    const fetchImpl = geminiReturning("Viande");
+    await parseRecipeText("texte", [], fetchImpl);
+    const body = JSON.parse((fetchImpl as any).mock.calls[0][1].body);
+    expect(body.generationConfig.responseSchema.properties.category.enum).toContain("Apéro");
+    expect(body.systemInstruction.parts[0].text).toContain("Viande");
   });
 });
 

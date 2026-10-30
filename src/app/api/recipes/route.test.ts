@@ -54,6 +54,15 @@ describe("POST /api/recipes", () => {
     expect(createRecipe.mock.calls[0][1].steps).toEqual(["Mélanger", "Cuire"]);
   });
 
+  it("passes a known category and rejects an unknown one", async () => {
+    expect((await post({ name: "Tarte", ingredients: [], category: "Dessert" })).status).toBe(201);
+    expect(createRecipe.mock.calls[0][1].category).toBe("Dessert");
+
+    createRecipe.mockClear();
+    expect((await post({ name: "Tarte", ingredients: [], category: "Pizza" })).status).toBe(400);
+    expect(createRecipe).not.toHaveBeenCalled();
+  });
+
   it.each([["texte"], [[1, 2]], [null]])("rejects steps %j", async (steps) => {
     const response = await post({ name: "Crêpes", ingredients: [], steps });
 

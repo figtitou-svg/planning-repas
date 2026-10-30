@@ -17,6 +17,7 @@ export interface ImportResponse {
   created: CreatedLine[];
   /** Étapes de préparation ; absent des anciennes réponses. */
   steps?: string[];
+  category?: string;
 }
 
 export interface RecipeDraft {
@@ -26,6 +27,7 @@ export interface RecipeDraft {
   newIngredients: NewIngredientDraft[];
   unitMismatchIds?: string[];
   steps: string[];
+  category: string;
 }
 
 // Lines whose ingredient is no longer in the catalogue are dropped: the form
@@ -50,6 +52,7 @@ export function buildDraft(response: ImportResponse, catalog: Ingredient[]): Rec
     steps: Array.isArray(response.steps)
       ? response.steps.filter((step): step is string => typeof step === "string")
       : [],
+    category: typeof response.category === "string" ? response.category : "",
   };
 }
 

@@ -6,6 +6,7 @@ import { packageLabel } from "@/lib/packageHint";
 import type { NewIngredientDraft, RecipeDraft } from "@/lib/importDraft";
 import { createPendingIngredients } from "@/lib/createPendingIngredients";
 import { checkNewIngredientName } from "@/lib/newIngredientCheck";
+import { RECIPE_CATEGORIES } from "@/lib/recipeCategories";
 import { IngredientRow } from "./IngredientRow";
 import { NewIngredientRow } from "./NewIngredientRow";
 
@@ -15,6 +16,8 @@ export interface RecipeFormValues {
   ingredients: RecipeIngredient[];
   /** Absent quand les instructions n'ont pas pu être chargées : on ne touche alors pas à celles de Notion. */
   steps?: string[];
+  /** Absent quand la catégorie n'a pas changé : on ne touche pas à la colonne Notion. */
+  category?: string;
 }
 
 function parseSteps(text: string): string[] {
@@ -53,6 +56,8 @@ export function RecipeForm({
   const initialSteps = initial ? initial.steps : draft?.steps ?? [];
   const stepsEditable = initialSteps !== undefined;
   const [stepsText, setStepsText] = useState((initialSteps ?? []).join("\n"));
+  const initialCategory = initial?.category ?? draft?.category ?? "";
+  const [category, setCategory] = useState(initialCategory);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -144,6 +149,8 @@ export function RecipeForm({
           portions,
           ingredients: result.rows,
           ...(stepsEditable ? { steps: parseSteps(stepsText) } : {}),
+          // Une recette existante n'envoie la catégorie que si elle a changé (la colonne peut manquer).
+          ...(initial ? (category !== initialCategory ? { category } : {}) : category ? { category } : {}),
         });
       } catch {
         setError("Impossible d'enregistrer la recette, réessayez");
@@ -155,6 +162,7 @@ export function RecipeForm({
         setRows([]);
         setNewIngredients([]);
         setStepsText("");
+        setCategory("");
         setSearch("");
       }
     } finally {
@@ -188,6 +196,22 @@ export function RecipeForm({
             onChange={(e) => setPortionsDraft(e.target.value)}
             onBlur={() => setPortionsDraft(String(normalizePortions(portionsDraft)))}
           />
+        </div>
+
+        <div className="field">
+          <label htmlFor="recipe-category">Catégorie</label>
+          <select
+            id="recipe-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Aucune</option>
+            {RECIPE_CATEGORIES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="field">

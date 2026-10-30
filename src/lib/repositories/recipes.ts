@@ -2,6 +2,7 @@ import type { Client } from "@notionhq/client";
 import { notionConfig } from "../notionConfig";
 import type { Recipe, RecipeIngredient } from "../types";
 import { mapLimit } from "../mapLimit";
+import { parseRecipeCategory } from "../recipeCategories";
 
 // Notion tolère environ 3 requêtes par seconde : on écrit par petits lots plutôt qu'à la file.
 const WRITE_CONCURRENCY = 3;
@@ -71,6 +72,7 @@ function pageToRecipeBase(page: any): {
   name: string;
   portions: number;
   favorite: boolean;
+  category: string;
 } {
   return {
     id: page.id,
@@ -78,6 +80,8 @@ function pageToRecipeBase(page: any): {
     portions: page.properties["Portions"]?.number ?? 2,
     // La propriété peut manquer tant que la case « Favori » n'a pas été ajoutée dans Notion.
     favorite: page.properties["Favori"]?.checkbox ?? false,
+    // La propriété peut manquer tant que la liste « Catégorie » n'a pas été ajoutée dans Notion.
+    category: parseRecipeCategory(page.properties["Catégorie"]?.select?.name),
   };
 }
 
@@ -112,11 +116,11 @@ export async function listRecipes(client: Client): Promise<Recipe[]> {
   );
 
   return recipePages.map((page) => {
-    const { id, name, portions, favorite } = pageToRecipeBase(page);
+    const { id, name, portions, favorite, category } = pageToRecipeBase(page);
     const ingredients: RecipeIngredient[] = junctions
       .filter((j) => j.recipeId === id)
       .map((j) => ({ ingredientId: j.ingredientId, quantity: j.quantity }));
-    return { id, name, portions, favorite, ingredients };
+    return { id, name, portions, favorite, category, ingredients };
   });
 }
 
@@ -133,12 +137,13 @@ export async function getRecipe(client: Client, id: string): Promise<Recipe | nu
       relation: { contains: id },
     })
   ).map(pageToJunction);
-  const { name, portions, favorite } = pageToRecipeBase(page);
+  const { name, portions, favorite, category } = pageToRecipeBase(page);
   return {
     id,
     name,
     portions,
     favorite,
+    category,
     ingredients: junctions.map((j) => ({ ingredientId: j.ingredientId, quantity: j.quantity })),
     steps: await readSteps(client, id),
   };
@@ -222,13 +227,20 @@ async function syncJunctionRows(
 
 export async function createRecipe(
   client: Client,
-  data: { name: string; portions: number; ingredients: RecipeIngredient[]; steps?: string[] }
+  data: {
+    name: string;
+    portions: number;
+    ingredients: RecipeIngredient[];
+    steps?: string[];
+    category?: string;
+  }
 ): Promise<Recipe> {
   const page = await client.pages.create({
     parent: { database_id: notionConfig.recipesDbId() },
     properties: {
       Nom: { title: [{ text: { content: data.name } }] },
       Portions: { number: data.portions },
+      ...(data.category ? { Catégorie: { select: { name: data.category } } } : {}),
     } as any,
   });
   await createJunctionRows(client, page.id, data.ingredients);
@@ -239,6 +251,7 @@ export async function createRecipe(
     name: data.name,
     portions: data.portions,
     favorite: false,
+    category: data.category ?? "",
     ingredients: data.ingredients,
     ...(steps.length > 0 ? { steps } : {}),
   };
@@ -253,6 +266,7 @@ export async function updateRecipe(
     favorite?: boolean;
     ingredients?: RecipeIngredient[];
     steps?: string[];
+    category?: string;
   }
 ): Promise<void> {
   const properties: Record<string, unknown> = {};
@@ -264,6 +278,9 @@ export async function updateRecipe(
   }
   if (data.favorite !== undefined) {
     properties.Favori = { checkbox: data.favorite };
+  }
+  if (data.category !== undefined) {
+    properties.Catégorie = { select: data.category === "" ? null : { name: data.category } };
   }
   if (Object.keys(properties).length > 0) {
     await client.pages.update({ page_id: id, properties } as any);

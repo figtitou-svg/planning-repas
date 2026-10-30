@@ -10,6 +10,7 @@
     "test:watch": "vitest",
     "verify:notion": "tsx scripts/verify-notion-setup.ts",
     "setup:favorite": "tsx scripts/add-favorite-property.ts",
+    "setup:category": "tsx scripts/add-category-property.ts",
     "setup:extras": "tsx scripts/add-extra-property.ts",
     "setup:household": "tsx scripts/setup-household.ts",
     "seed:recipes": "tsx scripts/seed-recipes.ts"

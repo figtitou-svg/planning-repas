@@ -13,7 +13,8 @@ function recipePage(
   id: string,
   name: string,
   portions: number | null = 2,
-  favorite?: boolean
+  favorite?: boolean,
+  category?: string
 ) {
   return {
     id,
@@ -22,6 +23,8 @@ function recipePage(
       Portions: { number: portions },
       // Sans la colonne « Favori » dans Notion, la propriété est simplement absente.
       ...(favorite === undefined ? {} : { Favori: { checkbox: favorite } }),
+      // Sans la liste « Catégorie » dans Notion, la propriété est simplement absente.
+      ...(category === undefined ? {} : { "Catégorie": { select: category ? { name: category } : null } }),
     },
   };
 }
@@ -82,9 +85,33 @@ describe("recipes repository", () => {
         name: "Crêpes",
         portions: 2,
         favorite: false,
+        category: "",
         ingredients: [{ ingredientId: "ing-flour", quantity: 500 }],
       },
     ]);
+  });
+
+  it("lists the category from the Catégorie select, ignoring unknown values", async () => {
+    (client.databases.query as any).mockImplementation(({ database_id }: any) => {
+      if (database_id === "db-recipes") {
+        return Promise.resolve({
+          results: [
+            recipePage("r1", "Tarte", 2, false, "Dessert"),
+            recipePage("r2", "Steak", 2, false, "Viande"),
+            recipePage("r3", "Autre chose", 2, false, "Option supprimée"),
+            recipePage("r4", "Sans liste", 2, false, ""),
+            recipePage("r5", "Sans colonne"),
+          ],
+          has_more: false,
+          next_cursor: null,
+        });
+      }
+      return Promise.resolve({ results: [], has_more: false, next_cursor: null });
+    });
+
+    const result = await listRecipes(client);
+
+    expect(result.map((r) => r.category)).toEqual(["Dessert", "Viande", "", "", ""]);
   });
 
   it("lists the favorite flag from the Favori checkbox", async () => {
@@ -148,6 +175,7 @@ describe("recipes repository", () => {
       name: "Crêpes",
       portions: 2,
       favorite: false,
+      category: "",
       ingredients: [{ ingredientId: "ing-flour", quantity: 500 }],
       steps: [],
     });
@@ -203,6 +231,38 @@ describe("recipes repository", () => {
     ]);
     expect(call.children[0].type).toBe("numbered_list_item");
     expect(recipe.steps).toEqual(["Cuire", "Servir"]);
+  });
+
+  it("createRecipe stores the category as a select", async () => {
+    (client.pages.create as any).mockResolvedValue({ id: "recipe-9" });
+
+    const recipe = await createRecipe(client, {
+      name: "Tarte",
+      portions: 2,
+      ingredients: [],
+      category: "Dessert",
+    });
+
+    const props = (client.pages.create as any).mock.calls[0][0].properties;
+    expect(props["Catégorie"]).toEqual({ select: { name: "Dessert" } });
+    expect(recipe.category).toBe("Dessert");
+  });
+
+  it("createRecipe without category does not write the property", async () => {
+    (client.pages.create as any).mockResolvedValue({ id: "recipe-9" });
+
+    await createRecipe(client, { name: "Tarte", portions: 2, ingredients: [] });
+
+    expect((client.pages.create as any).mock.calls[0][0].properties).not.toHaveProperty("Catégorie");
+  });
+
+  it("updateRecipe sets, changes and clears the category", async () => {
+    await updateRecipe(client, "recipe-1", { category: "Apéro" });
+    await updateRecipe(client, "recipe-1", { category: "" });
+
+    const calls = (client.pages.update as any).mock.calls;
+    expect(calls[0][0].properties).toEqual({ "Catégorie": { select: { name: "Apéro" } } });
+    expect(calls[1][0].properties).toEqual({ "Catégorie": { select: null } });
   });
 
   it("createRecipe without steps writes no blocks", async () => {

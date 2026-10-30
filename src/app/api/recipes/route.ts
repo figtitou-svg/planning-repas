@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getNotionClient } from "@/lib/notionClient";
 import { createRecipe } from "@/lib/repositories/recipes";
 import { invalidSteps } from "@/lib/stepsValidation";
+import { invalidCategory } from "@/lib/recipeCategories";
 import { cachedReads, invalidateRecipes, wantsFresh } from "@/lib/cachedReads";
 
 export async function GET(request: Request) {
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
   }
   if (invalidSteps(body?.steps)) {
     return NextResponse.json({ error: "steps doit être une liste de textes" }, { status: 400 });
+  }
+  if (invalidCategory(body?.category)) {
+    return NextResponse.json({ error: "category inconnue" }, { status: 400 });
   }
   let recipe;
   try {
