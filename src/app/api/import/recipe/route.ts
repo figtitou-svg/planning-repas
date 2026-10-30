@@ -61,18 +61,13 @@ export async function POST(request: Request) {
       if (e.code === "bad_url") return fail("Lien TikTok ou Instagram invalide", 400);
       const platform = e.platform === "instagram" ? "Instagram" : "TikTok";
       return fail(
-        `Impossible de lire la publication ${platform} (lien privé ou supprimé ? Collez plutôt le texte de la description, ou envoyez la vidéo)`,
+        `Impossible de lire la publication ${platform} (lien privé ou supprimé ? Collez plutôt le texte de la description)`,
         502
       );
     }
     if (e instanceof RecipeParseError) {
       return e.code === "empty"
-        ? fail(
-            hasUrl
-              ? "Aucune recette dans la légende de ce lien. Si elle est dite dans la vidéo, envoyez le fichier vidéo"
-              : "Aucune recette exploitable trouvée dans ce texte",
-            422
-          )
+        ? fail("Aucune recette exploitable trouvée dans ce texte", 422)
         : fail("L'analyse de la recette a échoué, réessayez", 502);
     }
     console.error("import/recipe: erreur interne", e instanceof Error ? e.name : typeof e);
