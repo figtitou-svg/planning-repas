@@ -41,6 +41,13 @@ function fakeClient(): Client {
   return {
     databases: { query: vi.fn() },
     pages: { create: vi.fn(), update: vi.fn(), retrieve: vi.fn() },
+    blocks: {
+      children: {
+        list: vi.fn().mockResolvedValue({ results: [], has_more: false, next_cursor: null }),
+        append: vi.fn().mockResolvedValue({}),
+      },
+      delete: vi.fn().mockResolvedValue({}),
+    },
   } as unknown as Client;
 }
 
@@ -142,7 +149,106 @@ describe("recipes repository", () => {
       portions: 2,
       favorite: false,
       ingredients: [{ ingredientId: "ing-flour", quantity: 500 }],
+      steps: [],
     });
+  });
+
+  it("getRecipe reads the steps from the page body, ignoring other blocks", async () => {
+    (client.pages.retrieve as any).mockResolvedValue(recipePage("recipe-1", "Crêpes"));
+    (client.databases.query as any).mockResolvedValue({ results: [], has_more: false, next_cursor: null });
+    const text = (plain: string) => [{ plain_text: plain }];
+    (client.blocks.children.list as any)
+      .mockResolvedValueOnce({
+        results: [
+          { id: "b1", type: "numbered_list_item", numbered_list_item: { rich_text: text("Mélanger ") } },
+          { id: "b2", type: "image", image: {} },
+        ],
+        has_more: true,
+        next_cursor: "c2",
+      })
+      .mockResolvedValueOnce({
+        results: [
+          { id: "b3", type: "paragraph", paragraph: { rich_text: [] } },
+          { id: "b4", type: "numbered_list_item", numbered_list_item: { rich_text: text("Faire "), } },
+        ],
+        has_more: false,
+        next_cursor: null,
+      });
+
+    const result = await getRecipe(client, "recipe-1");
+
+    expect(result?.steps).toEqual(["Mélanger", "Faire"]);
+    expect(client.blocks.children.list).toHaveBeenNthCalledWith(2, {
+      block_id: "recipe-1",
+      start_cursor: "c2",
+    });
+  });
+
+  it("createRecipe stores the cleaned steps as numbered list items", async () => {
+    (client.pages.create as any).mockResolvedValue({ id: "recipe-9" });
+
+    const recipe = await createRecipe(client, {
+      name: "Pâtes",
+      portions: 2,
+      ingredients: [],
+      steps: ["  Cuire  ", "", "Servir"],
+    });
+
+    expect(client.blocks.children.append).toHaveBeenCalledTimes(1);
+    const call = (client.blocks.children.append as any).mock.calls[0][0];
+    expect(call.block_id).toBe("recipe-9");
+    expect(call.children.map((b: any) => b.numbered_list_item.rich_text[0].text.content)).toEqual([
+      "Cuire",
+      "Servir",
+    ]);
+    expect(call.children[0].type).toBe("numbered_list_item");
+    expect(recipe.steps).toEqual(["Cuire", "Servir"]);
+  });
+
+  it("createRecipe without steps writes no blocks", async () => {
+    (client.pages.create as any).mockResolvedValue({ id: "recipe-9" });
+
+    const recipe = await createRecipe(client, { name: "Pâtes", portions: 2, ingredients: [] });
+
+    expect(client.blocks.children.append).not.toHaveBeenCalled();
+    expect(recipe.steps).toBeUndefined();
+  });
+
+  it("createRecipe splits more than 100 steps over several appends", async () => {
+    (client.pages.create as any).mockResolvedValue({ id: "recipe-9" });
+    const steps = Array.from({ length: 130 }, (_, i) => `étape ${i}`);
+
+    await createRecipe(client, { name: "Long", portions: 2, ingredients: [], steps });
+
+    const calls = (client.blocks.children.append as any).mock.calls;
+    expect(calls.map((c: any) => c[0].children.length)).toEqual([100, 30]);
+  });
+
+  it("updateRecipe replaces the existing steps and leaves other blocks alone", async () => {
+    (client.blocks.children.list as any).mockResolvedValue({
+      results: [
+        { id: "old1", type: "numbered_list_item", numbered_list_item: { rich_text: [] } },
+        { id: "img", type: "image", image: {} },
+      ],
+      has_more: false,
+      next_cursor: null,
+    });
+
+    await updateRecipe(client, "recipe-1", { steps: ["Nouvelle étape"] });
+
+    expect(client.blocks.delete).toHaveBeenCalledTimes(1);
+    expect(client.blocks.delete).toHaveBeenCalledWith({ block_id: "old1" });
+    const call = (client.blocks.children.append as any).mock.calls[0][0];
+    expect(call.children[0].numbered_list_item.rich_text[0].text.content).toBe("Nouvelle étape");
+    expect(client.pages.update).not.toHaveBeenCalled();
+  });
+
+  it("updateRecipe without steps never touches the page body", async () => {
+    await updateRecipe(client, "recipe-1", { name: "Autre" });
+
+    expect(client.blocks.children.list).not.toHaveBeenCalled();
+    expect(client.blocks.delete).not.toHaveBeenCalled();
+    expect(client.blocks.children.append).not.toHaveBeenCalled();
   });
 
   it("creates a recipe page then one junction row per ingredient", async () => {

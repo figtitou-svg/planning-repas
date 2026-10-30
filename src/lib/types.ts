@@ -22,6 +22,8 @@ export interface Recipe {
   /** Recette gardée à portée de main (case « Favori » dans Notion). */
   favorite: boolean;
   ingredients: RecipeIngredient[];
+  /** Étapes de préparation (corps de la page Notion). Seulement renvoyées par la lecture d'une recette seule. */
+  steps?: string[];
 }
 
 export interface PantryItem {

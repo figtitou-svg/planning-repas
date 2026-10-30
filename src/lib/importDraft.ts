@@ -15,6 +15,8 @@ export interface ImportResponse {
   portions: number;
   matched: MatchedLine[];
   created: CreatedLine[];
+  /** Étapes de préparation ; absent des anciennes réponses. */
+  steps?: string[];
 }
 
 export interface RecipeDraft {
@@ -23,6 +25,7 @@ export interface RecipeDraft {
   ingredients: RecipeIngredient[];
   newIngredients: NewIngredientDraft[];
   unitMismatchIds?: string[];
+  steps: string[];
 }
 
 // Lines whose ingredient is no longer in the catalogue are dropped: the form
@@ -44,6 +47,9 @@ export function buildDraft(response: ImportResponse, catalog: Ingredient[]): Rec
       ...(unitMismatch ? { unitMismatch: true as const } : {}),
     })),
     unitMismatchIds: kept.filter((line) => line.unitMismatch).map((line) => line.ingredientId),
+    steps: Array.isArray(response.steps)
+      ? response.steps.filter((step): step is string => typeof step === "string")
+      : [],
   };
 }
 

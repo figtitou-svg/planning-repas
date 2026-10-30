@@ -6,6 +6,66 @@ import { mapLimit } from "../mapLimit";
 // Notion tolère environ 3 requêtes par seconde : on écrit par petits lots plutôt qu'à la file.
 const WRITE_CONCURRENCY = 3;
 
+// Limites de Notion : 2 000 caractères par bloc de texte, 100 blocs par ajout.
+const MAX_STEP_CHARS = 2000;
+const MAX_BLOCKS_PER_APPEND = 100;
+const STEP_BLOCK_TYPES = new Set(["numbered_list_item", "bulleted_list_item", "paragraph"]);
+
+export function cleanSteps(steps: readonly unknown[]): string[] {
+  return steps
+    .filter((step): step is string => typeof step === "string")
+    .map((step) => step.trim().slice(0, MAX_STEP_CHARS))
+    .filter((step) => step !== "");
+}
+
+async function listStepBlocks(client: Client, pageId: string): Promise<any[]> {
+  const blocks: any[] = [];
+  let cursor: string | undefined;
+  do {
+    const response: any = await client.blocks.children.list({
+      block_id: pageId,
+      start_cursor: cursor,
+    });
+    blocks.push(...response.results);
+    cursor = response.has_more ? response.next_cursor ?? undefined : undefined;
+  } while (cursor);
+  return blocks.filter((block) => STEP_BLOCK_TYPES.has(block.type));
+}
+
+async function readSteps(client: Client, pageId: string): Promise<string[]> {
+  const blocks = await listStepBlocks(client, pageId);
+  return blocks
+    .map((block) =>
+      ((block[block.type]?.rich_text ?? []) as Array<{ plain_text?: string }>)
+        .map((part) => part.plain_text ?? "")
+        .join("")
+        .trim()
+    )
+    .filter((text) => text !== "");
+}
+
+async function appendSteps(client: Client, pageId: string, steps: string[]): Promise<void> {
+  for (let i = 0; i < steps.length; i += MAX_BLOCKS_PER_APPEND) {
+    await client.blocks.children.append({
+      block_id: pageId,
+      children: steps.slice(i, i + MAX_BLOCKS_PER_APPEND).map((step) => ({
+        object: "block",
+        type: "numbered_list_item",
+        numbered_list_item: { rich_text: [{ type: "text", text: { content: step } }] },
+      })),
+    } as any);
+  }
+}
+
+// Remplace les étapes existantes (blocs de texte de la page) par la liste voulue.
+async function replaceSteps(client: Client, pageId: string, steps: string[]): Promise<void> {
+  const existing = await listStepBlocks(client, pageId);
+  await mapLimit(existing, WRITE_CONCURRENCY, (block) =>
+    client.blocks.delete({ block_id: block.id }).then(() => undefined)
+  );
+  await appendSteps(client, pageId, steps);
+}
+
 function pageToRecipeBase(page: any): {
   id: string;
   name: string;
@@ -80,6 +140,7 @@ export async function getRecipe(client: Client, id: string): Promise<Recipe | nu
     portions,
     favorite,
     ingredients: junctions.map((j) => ({ ingredientId: j.ingredientId, quantity: j.quantity })),
+    steps: await readSteps(client, id),
   };
 }
 
@@ -161,7 +222,7 @@ async function syncJunctionRows(
 
 export async function createRecipe(
   client: Client,
-  data: { name: string; portions: number; ingredients: RecipeIngredient[] }
+  data: { name: string; portions: number; ingredients: RecipeIngredient[]; steps?: string[] }
 ): Promise<Recipe> {
   const page = await client.pages.create({
     parent: { database_id: notionConfig.recipesDbId() },
@@ -171,19 +232,28 @@ export async function createRecipe(
     } as any,
   });
   await createJunctionRows(client, page.id, data.ingredients);
+  const steps = cleanSteps(data.steps ?? []);
+  if (steps.length > 0) await appendSteps(client, page.id, steps);
   return {
     id: page.id,
     name: data.name,
     portions: data.portions,
     favorite: false,
     ingredients: data.ingredients,
+    ...(steps.length > 0 ? { steps } : {}),
   };
 }
 
 export async function updateRecipe(
   client: Client,
   id: string,
-  data: { name?: string; portions?: number; favorite?: boolean; ingredients?: RecipeIngredient[] }
+  data: {
+    name?: string;
+    portions?: number;
+    favorite?: boolean;
+    ingredients?: RecipeIngredient[];
+    steps?: string[];
+  }
 ): Promise<void> {
   const properties: Record<string, unknown> = {};
   if (data.name !== undefined) {
@@ -200,6 +270,9 @@ export async function updateRecipe(
   }
   if (data.ingredients !== undefined) {
     await syncJunctionRows(client, id, data.ingredients);
+  }
+  if (data.steps !== undefined) {
+    await replaceSteps(client, id, cleanSteps(data.steps));
   }
 }
 

@@ -61,11 +61,11 @@ export function ImportPanel({
   return (
     <form onSubmit={handleSubmit} className="import-panel" aria-busy={loading}>
       <div className="field">
-        <label htmlFor="import-input">Lien TikTok ou texte de la recette</label>
+        <label htmlFor="import-input">Lien TikTok, Instagram ou texte de la recette</label>
         <textarea
           id="import-input"
           rows={3}
-          placeholder="https://www.tiktok.com/… ou collez la description de la recette"
+          placeholder="Lien TikTok ou Instagram (Reel), ou collez la description de la recette"
           value={input}
           disabled={loading}
           onChange={(e) => setInput(e.target.value)}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNotionClient } from "@/lib/notionClient";
 import { createRecipe } from "@/lib/repositories/recipes";
+import { invalidSteps } from "@/lib/stepsValidation";
 import { cachedReads, invalidateRecipes, wantsFresh } from "@/lib/cachedReads";
 
 export async function GET(request: Request) {
@@ -18,6 +19,9 @@ export async function POST(request: Request) {
   const portions = body?.portions === undefined ? 2 : body.portions;
   if (typeof portions !== "number" || !Number.isFinite(portions) || portions < 1) {
     return NextResponse.json({ error: "portions doit être un nombre >= 1" }, { status: 400 });
+  }
+  if (invalidSteps(body?.steps)) {
+    return NextResponse.json({ error: "steps doit être une liste de textes" }, { status: 400 });
   }
   let recipe;
   try {

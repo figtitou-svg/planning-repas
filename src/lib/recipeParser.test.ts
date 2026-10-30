@@ -61,6 +61,7 @@ describe("parseRecipeText", () => {
         { name: "pâtes", quantity: 400, unit: "g" },
         { name: "tomate", quantity: 3, unit: "pièce" },
       ],
+      steps: [],
     });
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -478,4 +479,52 @@ describe("parseRecipeText", () => {
     ).rejects.toThrow("GEMINI_API_KEY");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+});
+
+describe("parseRecipeText steps", () => {
+  beforeEach(() => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function geminiReturning(recipe: unknown): typeof fetch {
+    return vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(recipe) }] } }],
+      }),
+    }) as unknown as typeof fetch;
+  }
+  const base = { name: "A", portions: 2, ingredients: [{ name: "sel", quantity: 1, unit: "g" }] };
+
+  it("keeps cleaned steps in order", async () => {
+    const result = await parseRecipeText(
+      "texte",
+      [],
+      geminiReturning({ ...base, steps: ["  Faire   cuire\nles pâtes ", "", 3, "Servir"] })
+    );
+    expect(result.steps).toEqual(["Faire cuire les pâtes", "Servir"]);
+  });
+
+  it("caps the number and the length of steps", async () => {
+    const many = Array.from({ length: 80 }, (_, i) => `étape ${i}`);
+    const result = await parseRecipeText("texte", [], geminiReturning({ ...base, steps: many }));
+    expect(result.steps).toHaveLength(40);
+    const long = await parseRecipeText(
+      "texte",
+      [],
+      geminiReturning({ ...base, steps: ["x".repeat(2000)] })
+    );
+    expect(long.steps[0]).toHaveLength(600);
+  });
+
+  it.each([["missing", undefined], ["not an array", "mélanger"]])(
+    "gives no steps when steps is %s",
+    async (_label, steps) => {
+      const result = await parseRecipeText("texte", [], geminiReturning({ ...base, steps }));
+      expect(result.steps).toEqual([]);
+    }
+  );
 });

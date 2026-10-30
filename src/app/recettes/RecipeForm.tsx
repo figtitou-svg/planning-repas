@@ -13,6 +13,15 @@ export interface RecipeFormValues {
   name: string;
   portions: number;
   ingredients: RecipeIngredient[];
+  /** Absent quand les instructions n'ont pas pu être chargées : on ne touche alors pas à celles de Notion. */
+  steps?: string[];
+}
+
+function parseSteps(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.replace(/^\s*(?:\d+\s*[.)]|[-*•])\s*/, "").trim())
+    .filter((line) => line !== "");
 }
 
 export function RecipeForm({
@@ -40,6 +49,10 @@ export function RecipeForm({
   const [newIngredients, setNewIngredients] = useState<NewIngredientDraft[]>(
     draft?.newIngredients ?? []
   );
+  // Sans liste d'étapes connue (recette existante dont le chargement a échoué), le champ est masqué.
+  const initialSteps = initial ? initial.steps : draft?.steps ?? [];
+  const stepsEditable = initialSteps !== undefined;
+  const [stepsText, setStepsText] = useState((initialSteps ?? []).join("\n"));
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -126,7 +139,12 @@ export function RecipeForm({
       }
 
       try {
-        await onSubmit({ name, portions, ingredients: result.rows });
+        await onSubmit({
+          name,
+          portions,
+          ingredients: result.rows,
+          ...(stepsEditable ? { steps: parseSteps(stepsText) } : {}),
+        });
       } catch {
         setError("Impossible d'enregistrer la recette, réessayez");
         return;
@@ -136,6 +154,7 @@ export function RecipeForm({
         setPortionsDraft("2");
         setRows([]);
         setNewIngredients([]);
+        setStepsText("");
         setSearch("");
       }
     } finally {
@@ -269,6 +288,19 @@ export function RecipeForm({
                 />
               ))}
             </ul>
+          </div>
+        )}
+
+        {stepsEditable && (
+          <div className="field">
+            <label htmlFor="recipe-steps">Instructions (une étape par ligne)</label>
+            <textarea
+              id="recipe-steps"
+              rows={6}
+              placeholder="Cuire les pâtes&#10;Ajouter la sauce"
+              value={stepsText}
+              onChange={(e) => setStepsText(e.target.value)}
+            />
           </div>
         )}
 

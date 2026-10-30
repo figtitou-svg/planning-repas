@@ -40,6 +40,7 @@ function RecipeRow({
   onEdit,
   onDelete,
   onToggleFavorite,
+  onLoadSteps,
 }: {
   recipe: Recipe;
   catalog: Ingredient[];
@@ -47,6 +48,7 @@ function RecipeRow({
   onEdit: () => void;
   onDelete: () => void;
   onToggleFavorite: () => void;
+  onLoadSteps: () => Promise<string[] | null>;
 }) {
   // Suppression en deux temps : le premier appui demande confirmation, puis se referme seul.
   const [confirming, setConfirming] = useState(false);
@@ -55,6 +57,14 @@ function RecipeRow({
     const timer = setTimeout(() => setConfirming(false), 4000);
     return () => clearTimeout(timer);
   }, [confirming]);
+
+  // Les instructions vivent dans le corps de la page Notion : on ne les charge qu'à l'ouverture.
+  const [stepsStatus, setStepsStatus] = useState<"idle" | "loading" | "error">("idle");
+  async function loadSteps() {
+    if (recipe.steps !== undefined || stepsStatus === "loading") return;
+    setStepsStatus("loading");
+    setStepsStatus((await onLoadSteps()) === null ? "error" : "idle");
+  }
 
   const names = recipe.ingredients.map(
     (ri) => catalog.find((c) => c.id === ri.ingredientId)?.name ?? "(ingrédient supprimé)"
@@ -120,6 +130,36 @@ function RecipeRow({
               );
             })}
           </ul>
+        </details>
+        <details
+          className="row-details"
+          onToggle={(event) => {
+            if (event.currentTarget.open) void loadSteps();
+          }}
+        >
+          <summary>Instructions</summary>
+          {stepsStatus === "loading" ? (
+            <p className="card-meta" role="status">
+              Chargement…
+            </p>
+          ) : stepsStatus === "error" ? (
+            <p className="row-warning" role="alert">
+              Impossible de charger les instructions.{" "}
+              <button type="button" className="btn-sm" onClick={() => void loadSteps()}>
+                Réessayer
+              </button>
+            </p>
+          ) : recipe.steps === undefined ? null : recipe.steps.length === 0 ? (
+            <p className="card-meta">
+              Aucune instruction pour cette recette. « Modifier » permet d'en ajouter.
+            </p>
+          ) : (
+            <ol className="card-steps">
+              {recipe.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          )}
         </details>
         <div className="row-actions">
           <button className="btn-sm btn-primary" type="button" onClick={onSchedule}>
@@ -271,6 +311,20 @@ export default function RecipesPage() {
     setRecipes((current) => current.map((r) => (r.id === id ? { ...r, ...values } : r)));
     closeForm();
     setNotice({ text: `${values.name} mise à jour`, error: false });
+  }
+
+  // Lit la recette seule (avec ses étapes) et garde les étapes dans la liste ; null si la lecture échoue.
+  async function loadSteps(id: string): Promise<string[] | null> {
+    try {
+      const response = await fetch(`/api/recipes/${id}`);
+      if (!response.ok) return null;
+      const detail: Recipe = await response.json();
+      const steps = Array.isArray(detail.steps) ? detail.steps : [];
+      setRecipes((current) => current.map((r) => (r.id === id ? { ...r, steps } : r)));
+      return steps;
+    } catch {
+      return null;
+    }
   }
 
   async function handleDelete(id: string) {
@@ -471,7 +525,15 @@ export default function RecipesPage() {
                   catalog={catalog}
                   onToggleFavorite={() => toggleFavorite(recipe)}
                   onSchedule={() => setScheduling(recipe)}
-                  onEdit={() => {
+                  onLoadSteps={() => loadSteps(recipe.id)}
+                  onEdit={async () => {
+                    // Les étapes sont lues avant d'ouvrir le formulaire, pour ne pas écraser celles de Notion.
+                    if (recipe.steps === undefined && (await loadSteps(recipe.id)) === null) {
+                      setNotice({
+                        text: "Instructions illisibles : elles ne seront pas modifiées.",
+                        error: true,
+                      });
+                    }
                     setCreating(false);
                     setDraft(undefined);
                     setEditingId(recipe.id);

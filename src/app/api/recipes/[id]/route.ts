@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNotionClient } from "@/lib/notionClient";
 import { getRecipe, updateRecipe, deleteRecipe } from "@/lib/repositories/recipes";
+import { invalidSteps } from "@/lib/stepsValidation";
 import { invalidateRecipes } from "@/lib/cachedReads";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   if (data?.favorite !== undefined && typeof data.favorite !== "boolean") {
     return NextResponse.json({ error: "favorite doit être true ou false" }, { status: 400 });
+  }
+  if (invalidSteps(data?.steps)) {
+    return NextResponse.json({ error: "steps doit être une liste de textes" }, { status: 400 });
   }
   try {
     await updateRecipe(getNotionClient(), (await params).id, data);

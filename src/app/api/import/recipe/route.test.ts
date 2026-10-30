@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TikTokImportError } from "@/lib/tiktokOembed";
+import { SocialImportError } from "@/lib/socialCaption";
 import { RecipeParseError } from "@/lib/recipeParser";
 
-const fetchTikTokCaption = vi.fn();
+const fetchSocialCaption = vi.fn();
 const parseRecipeText = vi.fn();
 const listIngredients = vi.fn();
 
@@ -10,9 +10,9 @@ vi.mock("@/lib/notionClient", () => ({ getNotionClient: () => ({}) }));
 vi.mock("@/lib/repositories/ingredients", () => ({
   listIngredients: (...args: unknown[]) => listIngredients(...args),
 }));
-vi.mock("@/lib/tiktokOembed", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/tiktokOembed")>()),
-  fetchTikTokCaption: (...args: unknown[]) => fetchTikTokCaption(...args),
+vi.mock("@/lib/socialCaption", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/socialCaption")>()),
+  fetchSocialCaption: (...args: unknown[]) => fetchSocialCaption(...args),
 }));
 vi.mock("@/lib/recipeParser", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/recipeParser")>()),
@@ -39,11 +39,11 @@ describe("POST /api/import/recipe", () => {
   const consoleError = vi.fn();
 
   beforeEach(() => {
-    fetchTikTokCaption.mockReset();
+    fetchSocialCaption.mockReset();
     parseRecipeText.mockReset();
     listIngredients.mockReset();
     listIngredients.mockResolvedValue(CATALOG);
-    fetchTikTokCaption.mockResolvedValue("légende TikTok");
+    fetchSocialCaption.mockResolvedValue("légende TikTok");
     parseRecipeText.mockResolvedValue({
       name: "Pâtes tomate",
       portions: 4,
@@ -52,6 +52,7 @@ describe("POST /api/import/recipe", () => {
         { name: "tomates", quantity: 200, unit: "g" },
         { name: "basilic", quantity: 5, unit: "g" },
       ],
+      steps: ["Cuire les pâtes", "Ajouter la sauce"],
     });
     consoleError.mockReset();
     vi.spyOn(console, "error").mockImplementation(consoleError);
@@ -73,16 +74,17 @@ describe("POST /api/import/recipe", () => {
         { ingredientId: "i2", quantity: 200, unitMismatch: true },
       ],
       created: [{ name: "basilic", unit: "g", quantity: 5 }],
+      steps: ["Cuire les pâtes", "Ajouter la sauce"],
     });
-    expect(fetchTikTokCaption).toHaveBeenCalledWith("https://www.tiktok.com/@a/video/1");
+    expect(fetchSocialCaption).toHaveBeenCalledWith("https://www.tiktok.com/@a/video/1");
     expect(parseRecipeText).toHaveBeenCalledWith("légende TikTok", ["Pâtes", "Tomate"]);
   });
 
-  it("imports pasted text without calling oEmbed", async () => {
+  it("imports pasted text without fetching a page", async () => {
     const response = await post({ text: "Pâtes tomate pour 4" });
 
     expect(response.status).toBe(200);
-    expect(fetchTikTokCaption).not.toHaveBeenCalled();
+    expect(fetchSocialCaption).not.toHaveBeenCalled();
     expect(parseRecipeText).toHaveBeenCalledWith("Pâtes tomate pour 4", ["Pâtes", "Tomate"]);
   });
 
@@ -99,7 +101,7 @@ describe("POST /api/import/recipe", () => {
     const response = await post(body);
 
     expect(response.status).toBe(400);
-    expect(fetchTikTokCaption).not.toHaveBeenCalled();
+    expect(fetchSocialCaption).not.toHaveBeenCalled();
     expect(parseRecipeText).not.toHaveBeenCalled();
   });
 
@@ -140,25 +142,46 @@ describe("POST /api/import/recipe", () => {
   });
 
   it("maps bad_url to 400", async () => {
-    fetchTikTokCaption.mockRejectedValue(new TikTokImportError("bad_url", "détail"));
+    fetchSocialCaption.mockRejectedValue(new SocialImportError("bad_url", "détail"));
 
     const response = await post({ url: "https://evil.com" });
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: "Lien TikTok invalide" });
+    expect(await response.json()).toEqual({ error: "Lien TikTok ou Instagram invalide" });
     expect(parseRecipeText).not.toHaveBeenCalled();
   });
 
   it("maps an unavailable video to 502", async () => {
-    fetchTikTokCaption.mockRejectedValue(new TikTokImportError("unavailable", "détail"));
+    fetchSocialCaption.mockRejectedValue(new SocialImportError("unavailable", "détail", "tiktok"));
 
     const response = await post({ url: "https://www.tiktok.com/@a/video/1" });
 
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({
       error:
-        "Impossible de lire la vidéo TikTok (lien privé ou supprimé ? Collez plutôt le texte de la description)",
+        "Impossible de lire la publication TikTok (lien privé ou supprimé ? Collez plutôt le texte de la description)",
     });
+  });
+
+  it("names Instagram when an Instagram post is unavailable", async () => {
+    fetchSocialCaption.mockRejectedValue(
+      new SocialImportError("unavailable", "détail", "instagram")
+    );
+
+    const response = await post({ url: "https://www.instagram.com/reel/abc/" });
+
+    expect(response.status).toBe(502);
+    expect((await response.json()).error).toContain("publication Instagram");
+  });
+
+  it("imports an Instagram reel like any other url", async () => {
+    fetchSocialCaption.mockResolvedValue("légende Instagram");
+
+    const response = await post({ url: "https://www.instagram.com/reel/abc/" });
+
+    expect(response.status).toBe(200);
+    expect(fetchSocialCaption).toHaveBeenCalledWith("https://www.instagram.com/reel/abc/");
+    expect(parseRecipeText).toHaveBeenCalledWith("légende Instagram", ["Pâtes", "Tomate"]);
   });
 
   it("maps an empty parse to 422", async () => {

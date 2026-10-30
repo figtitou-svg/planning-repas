@@ -31,7 +31,16 @@ describe("buildDraft", () => {
       ],
       newIngredients: [{ name: "basilic", unit: "g", quantity: 5 }],
       unitMismatchIds: ["i2"],
+      steps: [],
     });
+  });
+
+  it("carries the steps and ignores anything that is not text", () => {
+    const draft = buildDraft(
+      { name: "R", portions: 2, matched: [], created: [], steps: ["Cuire", 3 as unknown as string] },
+      CATALOG
+    );
+    expect(draft.steps).toEqual(["Cuire"]);
   });
 
   it("propagates unitMismatch on new ingredients", () => {

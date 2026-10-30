@@ -46,4 +46,18 @@ describe("POST /api/recipes", () => {
   it("rejects malformed JSON", async () => {
     expect((await post("{nope", true)).status).toBe(400);
   });
+
+  it("passes valid steps to the repository", async () => {
+    const response = await post({ name: "Crêpes", ingredients: [], steps: ["Mélanger", "Cuire"] });
+
+    expect(response.status).toBe(201);
+    expect(createRecipe.mock.calls[0][1].steps).toEqual(["Mélanger", "Cuire"]);
+  });
+
+  it.each([["texte"], [[1, 2]], [null]])("rejects steps %j", async (steps) => {
+    const response = await post({ name: "Crêpes", ingredients: [], steps });
+
+    expect(response.status).toBe(400);
+    expect(createRecipe).not.toHaveBeenCalled();
+  });
 });

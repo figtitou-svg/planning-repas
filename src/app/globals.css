@@ -661,6 +661,17 @@ p {
   border-bottom: none;
 }
 
+.card-steps {
+  margin: 4px 0 0;
+  padding-left: 1.4em;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.card-steps li {
+  padding: 4px 0;
+}
+
 .cat-dot {
   flex: none;
   width: 10px;

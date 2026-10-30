@@ -48,6 +48,20 @@ describe("PATCH /api/recipes/[id]", () => {
     expect(updateRecipe).not.toHaveBeenCalled();
   });
 
+  it("passes steps to the repository", async () => {
+    const response = await patch({ steps: ["Mélanger"] });
+
+    expect(response.status).toBe(204);
+    expect(updateRecipe).toHaveBeenCalledWith({}, "r1", { steps: ["Mélanger"] });
+  });
+
+  it("rejects steps that are not a list of texts", async () => {
+    const response = await patch({ steps: "Mélanger" });
+
+    expect(response.status).toBe(400);
+    expect(updateRecipe).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid JSON body", async () => {
     const response = await patch("{nope", true);
 
