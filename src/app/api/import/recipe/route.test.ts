@@ -159,7 +159,7 @@ describe("POST /api/import/recipe", () => {
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({
       error:
-        "Impossible de lire la publication TikTok (lien privé ou supprimé ? Collez plutôt le texte de la description)",
+        "Impossible de lire la publication TikTok (lien privé ou supprimé ? Collez plutôt le texte de la description, ou envoyez la vidéo)",
     });
   });
 
@@ -182,6 +182,15 @@ describe("POST /api/import/recipe", () => {
     expect(response.status).toBe(200);
     expect(fetchSocialCaption).toHaveBeenCalledWith("https://www.instagram.com/reel/abc/");
     expect(parseRecipeText).toHaveBeenCalledWith("légende Instagram", ["Pâtes", "Tomate"]);
+  });
+
+  it("points to the video upload when a link has no recipe in its caption", async () => {
+    parseRecipeText.mockRejectedValue(new RecipeParseError("empty", "détail"));
+
+    const response = await post({ url: "https://www.tiktok.com/@a/video/1" });
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toContain("envoyez le fichier vidéo");
   });
 
   it("maps an empty parse to 422", async () => {
