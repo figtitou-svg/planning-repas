@@ -1766,3 +1766,31 @@ button.add-new-ingredient {
     animation: none;
   }
 }
+
+/* Recettes : sections par catégorie */
+
+.recipe-group {
+  margin-top: 16px;
+}
+
+.recipe-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+  color: var(--ink);
+}
+
+.recipe-group-title::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cat);
+}
+
+.recipe-group-count {
+  color: var(--ink-3);
+  font-weight: 400;
+}

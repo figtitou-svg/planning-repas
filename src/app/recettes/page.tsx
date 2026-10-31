@@ -12,7 +12,7 @@ import {
   type RecipeDraft,
 } from "@/lib/importDraft";
 import { filterRecipes } from "@/lib/recipeFilter";
-import { recipeCategoryColor } from "@/lib/recipeCategories";
+import { groupByCategory, recipeCategoryColor } from "@/lib/recipeCategories";
 import { Icon } from "../Icon";
 import { ImportPanel } from "./ImportPanel";
 import { RecipeForm, type RecipeFormValues } from "./RecipeForm";
@@ -293,13 +293,25 @@ export default function RecipesPage() {
                   </button>
                 </div>
               ) : (
-            <ul className="panel recipe-list">
-              {visible.map((recipe) => (
-                <li key={recipe.id}>
-                  <RecipeRow recipe={recipe} catalog={catalog} />
-                </li>
-              ))}
-            </ul>
+            groupByCategory(visible).map((group) => (
+              <section
+                key={group.category || "none"}
+                className="recipe-group"
+                style={{ "--cat": recipeCategoryColor(group.category) } as React.CSSProperties}
+              >
+                <h2 className="recipe-group-title">
+                  {group.category || "Sans catégorie"}{" "}
+                  <span className="recipe-group-count">{group.recipes.length}</span>
+                </h2>
+                <ul className="panel recipe-list">
+                  {group.recipes.map((recipe) => (
+                    <li key={recipe.id}>
+                      <RecipeRow recipe={recipe} catalog={catalog} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
               )}
             </>
           )}

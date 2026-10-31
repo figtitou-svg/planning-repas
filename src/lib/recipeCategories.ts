@@ -55,3 +55,14 @@ export function recipeCategoryColor(category: string | undefined): string {
 export function invalidCategory(category: unknown): boolean {
   return category !== undefined && category !== "" && !isRecipeCategory(category);
 }
+
+/** Recettes regroupées par catégorie, dans l'ordre de RECIPE_CATEGORIES, « sans catégorie » en dernier. */
+export function groupByCategory<T extends { category?: string }>(
+  recipes: readonly T[]
+): { category: RecipeCategory | ""; recipes: T[] }[] {
+  const groups = [...RECIPE_CATEGORIES, ""].map((category) => ({
+    category: category as RecipeCategory | "",
+    recipes: recipes.filter((r) => (isRecipeCategory(r.category) ? r.category : "") === category),
+  }));
+  return groups.filter((g) => g.recipes.length > 0);
+}

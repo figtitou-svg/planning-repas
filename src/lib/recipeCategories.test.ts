@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  groupByCategory,
   invalidCategory,
   isRecipeCategory,
   parseRecipeCategory,
@@ -37,5 +38,22 @@ describe("recipe categories", () => {
     expect(invalidCategory("Pizza")).toBe(true);
     expect(invalidCategory(4)).toBe(true);
     expect(invalidCategory(null)).toBe(true);
+  });
+});
+
+describe("groupByCategory", () => {
+  it("groupe dans l'ordre des catégories, sans catégorie à la fin, sans groupe vide", () => {
+    const recipes = [
+      { id: "1", category: "Dessert" },
+      { id: "2" },
+      { id: "3", category: "Légumes" },
+      { id: "4", category: "Dessert" },
+      { id: "5", category: "Inconnue" },
+    ];
+    expect(groupByCategory(recipes).map((g) => [g.category, g.recipes.map((r) => r.id)])).toEqual([
+      ["Légumes", ["3"]],
+      ["Dessert", ["1", "4"]],
+      ["", ["2", "5"]],
+    ]);
   });
 });
